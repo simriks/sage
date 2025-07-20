@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Project-specific
+temp_videos/
+*.mp4
+*.avi
+*.mov
+*.mkv
+logs/
+*.log
+
+# Large installers/downloads
+Miniconda3-*.sh
+Anaconda3-*.sh
+*.pkg
+*.dmg
+*.exe
+*.msi
+
+# Secrets (IMPORTANT!)
+config_secret.py
+secrets.json
+api_keys.txt
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Conda environment files
+environment.yml
+conda-meta/
