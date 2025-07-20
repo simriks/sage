@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚁 Rescue Mission Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.4/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: #fff; }
+        
+        .header { background: #2c3e50; padding: 1rem; text-align: center; border-bottom: 3px solid #e74c3c; }
+        .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .status-bar { background: #34495e; padding: 0.5rem; text-align: center; }
+        
+        .main-container { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; padding: 1rem; height: calc(100vh - 120px); }
+        
+        .left-panel { display: flex; flex-direction: column; gap: 1rem; }
+        .right-panel { display: flex; flex-direction: column; gap: 1rem; }
+        
+        .mission-overview, .live-feed, .alerts, .mission-history { 
+            background: #2c3e50; border-radius: 8px; padding: 1rem; 
+        }
+        
+        .live-feed { flex: 1; }
+        .live-feed img { width: 100%; height: 300px; object-fit: cover; border-radius: 4px; background: #34495e; }
+        
+        .alerts { max-height: 200px; overflow-y: auto; }
+        .alert { 
+            background: #e74c3c; margin: 0.5rem 0; padding: 0.8rem; border-radius: 4px; 
+            border-left: 4px solid #c0392b; 
+        }
+        .alert.survivor { background: #e67e22; border-left-color: #d35400; }
+        .alert.medical { background: #27ae60; border-left-color: #229954; }
+        
+        .mission-item { 
+            background: #34495e; margin: 0.5rem 0; padding: 1rem; border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .mission-item.active { border-left-color: #e74c3c; }
+        .mission-item.complete { border-left-color: #27ae60; }
+        
+        .status-indicator { 
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%; 
+            margin-right: 8px; 
+        }
+        .status-active { background: #e74c3c; animation: pulse 2s infinite; }
+        .status-complete { background: #27ae60; }
+        .status-failed { background: #95a5a6; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .timestamp { color: #bdc3c7; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚁 Rescue Mission Dashboard</h1>
+        <div class="status-bar">
+            <span id="connection-status">🔗 Connecting...</span> | 
+            <span id="active-missions">📊 Active Missions: 0</span> | 
+            <span id="total-survivors">👥 Survivors Found: 0</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="mission-overview">
+                <h2>📊 Mission Overview</h2>
+                <div id="overview-stats">
+                    <p>🤖 Active Bots: <span id="active-bots">0</span></p>
+                    <p>🎯 Missions Today: <span id="missions-today">0</span></p>
+                    <p>🚨 Critical Alerts: <span id="critical-alerts">0</span></p>
+                </div>
+            </div>
+            
+            <div class="live-feed">
+                <h2>📹 Live Camera Feed</h2>
+                <div id="camera-container">
+                    <img id="live-camera" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzQ0OTVlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iI2JkYzNjNyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIExpdmUgRmVlZDwvdGV4dD48L3N2Zz4=" alt="Live Feed">
+                </div>
+                <p id="feed-status" class="timestamp">📡 Waiting for live feed...</p>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="alerts">
+                <h2>🚨 Live Alerts</h2>
+                <div id="alerts-container">
+                    <div class="alert">
+                        <strong>System Ready</strong><br>
+                        Dashboard monitoring active
+                        <div class="timestamp">Just now</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mission-history">
+                <h2>📋 Mission History</h2>
+                <div id="missions-container">
+                    <p class="timestamp">Loading missions...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        
+        // Connection status
+        socket.on('connect', function() {
+            document.getElementById('connection-status').innerHTML = '🟢 Connected';
+            document.getElementById('connection-status').style.color = '#27ae60';
+        });
+        
+        socket.on('disconnect', function() {
+            document.getElementById('connection-status').innerHTML = '🔴 Disconnected';
+            document.getElementById('connection-status').style.color = '#e74c3c';
+        });
+        
+        // Mission started
+        socket.on('mission_started', function(data) {
+            addAlert(`🚨 Mission Started: ${data.rover_name} (${data.mission_id})`, 'survivor');
+            updateMissionStats();
+            loadMissions();
+        });
+        
+        // CRITICAL: Survivor detected
+        socket.on('survivor_alert', function(data) {
+            addAlert(`🆘 SURVIVOR DETECTED! Mission: ${data.mission_id} | Confidence: ${(data.confidence * 100).toFixed(1)}% | Position: ${data.position}`, 'alert');
+            updateSurvivorCount();
+            
+            // Flash the screen for urgent alert
+            document.body.style.background = '#e74c3c';
+            setTimeout(() => document.body.style.background = '#1a1a1a', 500);
+        });
+        
+        // Medical analysis complete
+        socket.on('medical_analysis_complete', function(data) {
+            addAlert(`🏥 Medical Analysis Complete: ${data.mission_id} | Severity: ${data.analysis.severity || 'Unknown'}`, 'medical');
+        });
+        
+        // Live camera feed
+        socket.on('live_feed_update', function(data) {
+            document.getElementById('live-camera').src = 'data:image/jpeg;base64,' + data.frame_data;
+            document.getElementById('feed-status').innerHTML = `📡 Live feed active - ${new Date(data.timestamp).toLocaleTimeString()}`;
+        });
+        
+        // Status updates
+        socket.on('status_update', function(data) {
+            addAlert(`📊 Status Update: ${data.mission_id} - ${data.status}`, 'medical');
+        });
+        
+        function addAlert(message, type = 'alert') {
+            const alertsContainer = document.getElementById('alerts-container');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${type}`;
+            alertDiv.innerHTML = `
+                <strong>${message}</strong>
+                <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+            `;
+            
+            alertsContainer.insertBefore(alertDiv, alertsContainer.firstChild);
+            
+            // Keep only last 10 alerts
+            while (alertsContainer.children.length > 10) {
+                alertsContainer.removeChild(alertsContainer.lastChild);
+            }
+        }
+        
+        function updateMissionStats() {
+            // Update active missions count
+            fetch('/api/missions')
+                .then(response => response.json())
+                .then(missions => {
+                    const activeMissions = missions.filter(m => m.status === 'ACTIVE').length;
+                    document.getElementById('active-missions').innerHTML = `📊 Active Missions: ${activeMissions}`;
+                    document.getElementById('active-bots').innerHTML = activeMissions;
+                    document.getElementById('missions-today').innerHTML = missions.length;
+                });
+        }
+        
+        function updateSurvivorCount() {
+            fetch('/api/missions')
+                .then(response => response.json())
+                .then(missions => {
+                    const survivorsFound = missions.filter(m => m.survivor_detected).length;
+                    document.getElementById('total-survivors').innerHTML = `👥 Survivors Found: ${survivorsFound}`;
+                });
+        }
+        
+        function loadMissions() {
+            fetch('/api/missions')
+                .then(response => response.json())
+                .then(missions => {
+                    const container = document.getElementById('missions-container');
+                    container.innerHTML = '';
+                    
+                    missions.slice(0, 10).forEach(mission => {
+                        const statusClass = mission.status === 'ACTIVE' ? 'active' : 
+                                          mission.status === 'SUCCESS' ? 'complete' : 'failed';
+                        const statusIcon = mission.status === 'ACTIVE' ? '🔴' : 
+                                         mission.status === 'SUCCESS' ? '🟢' : '⚪';
+                        
+                        const missionDiv = document.createElement('div');
+                        missionDiv.className = `mission-item ${statusClass}`;
+                        missionDiv.innerHTML = `
+                            <div>
+                                <span class="status-indicator status-${statusClass}"></span>
+                                <strong>${mission.rover_name}</strong> - ${mission.mission_id}
+                            </div>
+                            <div>Status: ${statusIcon} ${mission.status}</div>
+                            <div>Survivor: ${mission.survivor_detected ? '✅ Detected' : '❌ None'}</div>
+                            <div class="timestamp">${new Date(mission.start_time).toLocaleString()}</div>
+                        `;
+                        container.appendChild(missionDiv);
+                    });
+                });
+        }
+        
+        // Initial load
+        updateMissionStats();
+        loadMissions();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            updateMissionStats();
+            loadMissions();
+        }, 30000);
+    </script>
+</body>
+</html>
