@@ -1,5 +1,37 @@
-twelvelabs>=0.4.11
-opencv-python==4.8.1.78
-python-dotenv==1.0.0
-numpy==1.24.3
-requests==2.31.0
+# Core Computer Vision & Image Processing
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# AI/ML Integration
+twelvelabs>=1.2.0
+requests>=2.31.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# Video Processing & Codecs
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.8
+
+# File Handling & Compression
+zipfile36>=0.1.3
+
+# System Monitoring & Logging
+psutil>=5.9.0
+
+# Date/Time Handling
+python-dateutil>=2.8.2
+
+# JSON/Data Processing
+jsonschema>=4.17.0
+
+# HTTP/API Utilities
+urllib3>=2.0.0
+certifi>=2023.7.22
+
+# Threading & Async Support
+threading-timer>=0.1.0
+
+# Path/File Utilities
+pathlib2>=2.3.7
