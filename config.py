@@ -20,6 +20,20 @@ class Config:
     ROVER_NAME = os.getenv("ROVER_NAME", "RescueBot")
     MISSION_ID = os.getenv("MISSION_ID", "mission_001")
     
+    # NEW: Gemini Movement Detection Configuration
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+    ESP32_STREAM_URL = os.getenv("ESP32_STREAM_URL", "https://telephony-calculate-equity-destruction.trycloudflare.com/stream")
+    MOVEMENT_FRAME_RATE = float(os.getenv("MOVEMENT_FRAME_RATE", 0.25))
+    TARGET_KEYWORD = os.getenv("TARGET_KEYWORD", "TARGET_LOCKED")
+
+    # ADD THESE NEW LINES FOR RASPBERRY PI: 
+    PI_IP = os.getenv("PI_IP", "10.33.22.106") 
+    PI_PORT = int(os.getenv("PI_PORT", 50000)) 
+    
+    @property 
+    def PI_CONTROL_URL(self): 
+        return f"http://{self.PI_IP}:{self.PI_PORT}/injury"
+
     # Directories
     TEMP_VIDEO_DIR = "temp_videos"
     
@@ -27,7 +41,7 @@ class Config:
     SURVIVOR_QUERIES = [
         "person lying on ground injured",
         "unconscious person on the ground",
-        "person trapped under debris or rubble", 
+        "person trapped under debris or rubble",
         "injured person calling for help with hands raised",
         "person with visible wounds or bleeding",
         "person in distress showing signs of pain",
@@ -50,7 +64,11 @@ class Config:
         if not cls.TWELVELABS_API_KEY:
             raise ValueError("TL_API_KEY is required in .env file")
         
+        if not cls.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is required in .env file")
+        
         # Create temp directory if it doesn't exist
         os.makedirs(cls.TEMP_VIDEO_DIR, exist_ok=True)
         
         print("✅ Configuration validated successfully")
+
