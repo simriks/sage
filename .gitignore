@@ -57,3 +57,4 @@ api_keys.txt
 # Conda environment files
 environment.yml
 conda-meta/
+/test_bmps
