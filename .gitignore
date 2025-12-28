@@ -1,61 +1,63 @@
+# Environment variables
+.env
+
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
 *.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Virtual Environments
-.env
-.venv
-env/
+# Virtual environments
 venv/
 ENV/
+env/
+.venv
 
-# IDE/Editor
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
-
-# Project-specific
-temp_videos/
-*.mp4
-*.avi
-*.mov
-*.mkv
-logs/
-*.log
-
-# Large installers/downloads
-Miniconda3-*.sh
-Anaconda3-*.sh
-*.pkg
-*.dmg
-*.exe
-*.msi
-
-# Secrets (IMPORTANT!)
-config_secret.py
-secrets.json
-api_keys.txt
-
-# Temporary files
-*.tmp
-*.temp
 *~
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
+# Project specific
+temp_videos/
+gemini_frames/
+temp_files/
+*.bmp
+*.mp4
+*.avi
 
-# Conda environment files
-environment.yml
-conda-meta/
-/test_bmps
+# Logs
+*.log
+rescue_log_*.json
+rescue_report_*.json
 
+# Database
+rescue_dashboard/rescue_missions.db
+rescue_dashboard/*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*~
