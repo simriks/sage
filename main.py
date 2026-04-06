@@ -8,10 +8,10 @@ import sys
 import signal
 import time
 from datetime import datetime
-from config import Config
-from camera_manager import CameraManager
-from body_detection import BodyDetectionSystem
-from rescue_protocol import RescueProtocol
+from src.config import Config
+from src.camera.camera_manager import CameraManager
+from src.detection.body_detection import BodyDetectionSystem
+from src.rescue.rescue_protocol import RescueProtocol
 
 class RescueRoverSystem:
     def __init__(self):

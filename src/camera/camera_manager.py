@@ -4,7 +4,7 @@ import threading
 from queue import Queue, Empty
 import tempfile
 import os
-from config import Config
+from ..config import Config
 
 class CameraManager:
     def __init__(self):

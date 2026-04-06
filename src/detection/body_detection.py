@@ -4,7 +4,7 @@ import json
 import threading
 from datetime import datetime
 from twelvelabs import TwelveLabs
-from config import Config
+from ..config import Config
 
 class BodyDetectionSystem:
     def __init__(self, camera_manager):
@@ -245,7 +245,7 @@ class BodyDetectionSystem:
                 
 
                 # Trigger rescue protocol
-                from rescue_protocol import RescueProtocol
+                from ..rescue.rescue_protocol import RescueProtocol
                 rescue_protocol = RescueProtocol()
                 rescue_protocol.activate_rescue_protocol({  # Changed method name
                     'analysis': analysis,

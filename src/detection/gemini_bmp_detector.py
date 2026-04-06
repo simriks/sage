@@ -9,7 +9,7 @@ from PIL import Image
 import threading
 import os
 from datetime import datetime
-from config import Config
+from ..config import Config
 
 class GeminiBmpDetector:
     def __init__(self):
