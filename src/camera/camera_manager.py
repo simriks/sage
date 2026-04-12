@@ -1,7 +1,7 @@
 import cv2
 import time
 import threading
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 import tempfile
 import os
 from ..config import Config
@@ -106,10 +106,20 @@ class CameraManager:
                         break
                 
                 # Add new frame
-                self.frame_queue.put({
-                    'frame': frame.copy(),  # Make a copy to avoid issues
-                    'timestamp': time.time()
-                })
+                try:
+                    self.frame_queue.put_nowait({
+                        'frame': frame.copy(),  # Make a copy to avoid issues
+                        'timestamp': time.time()
+                    })
+                except Full:
+                    try:
+                        self.frame_queue.get_nowait()
+                    except Empty:
+                        pass
+                    self.frame_queue.put_nowait({
+                        'frame': frame.copy(),
+                        'timestamp': time.time()
+                    })
                 
                 # Debug output every 50 frames
                 if frame_count % 50 == 0:
