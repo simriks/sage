@@ -211,11 +211,8 @@ class RescueProtocol:
         print("\n" + "="*50)
         print("📡 BASE STATION REPORT SUMMARY")
         print("="*50)
-        print(f"Mission: {report['mission_id']}")
-        print(f"Rover: {report['rover_name']}")
-        print(f"Alert: {report['alert_type']}")
-        print(f"Survivors: {report['survivors']['count']} ({report['survivors']['priority_level']} priority)")
-        print(f"Confidence: {report['survivors']['highest_confidence']:.3f}")
+        print("📄 Report generated and queued for transmission")
+        print(f"Next actions queued: {len(report['next_actions_required'])}")
         
         print(f"\nNEXT ACTIONS REQUIRED:")
         for i, action in enumerate(report['next_actions_required'], 1):

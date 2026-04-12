@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -eo pipefail
 
 # Activate virtual environment and run the rescue dashboard
 echo "🚁 Starting Rescue Dashboard..."

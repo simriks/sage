@@ -133,8 +133,8 @@ def start_mission():
         return jsonify({'status': 'success', 'message': 'Mission registered'})
     except sqlite3.IntegrityError:
         return _error_response('mission_id already exists', 409)
-    except sqlite3.Error as exc:
-        print(f"❌ Database error in start_mission: {exc}")
+    except sqlite3.Error:
+        print("❌ Database error in start_mission")
         return _error_response('database operation failed')
 
 @app.route('/api/mission/survivor_detected', methods=['POST'])
@@ -319,8 +319,8 @@ def get_missions():
             })
 
         return jsonify(mission_list)
-    except sqlite3.Error as exc:
-        print(f"❌ Database error in get_missions: {exc}")
+    except sqlite3.Error:
+        print("❌ Database error in get_missions")
         return _error_response('database operation failed')
 
 @app.route('/api/mission/<mission_id>/details')
@@ -350,8 +350,8 @@ def get_mission_details(mission_id):
             'events': events,
             'analysis': analysis
         })
-    except sqlite3.Error as exc:
-        print(f"❌ Database error in get_mission_details: {exc}")
+    except sqlite3.Error:
+        print("❌ Database error in get_mission_details")
         return _error_response('database operation failed')
 
 # WebSocket Events for Real-time Communication
