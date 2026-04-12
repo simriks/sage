@@ -80,8 +80,8 @@ python main.py
 
 Start the dashboard (optional):
 ```bash
-cd rescue_dashboard
-python rescue_dashboard_server.py
+cd dashboard
+python server.py
 ```
 Open browser to `http://localhost:5000`
 
@@ -101,12 +101,14 @@ Open browser to `http://localhost:5000`
 ```
 sage/
 ├── main.py                      # Main system entry point
-├── body_detection.py            # TwelveLabs integration
-├── camera_manager.py            # Camera control
-├── gemini_bmp_detector.py       # Gemini detection
-├── rescue_protocol.py           # Rescue procedures
-├── config.py                    # Configuration
-└── rescue_dashboard/            # Web dashboard
+├── requirements.txt             # Core runtime dependencies
+├── src/
+│   ├── config.py                # Configuration
+│   ├── camera/camera_manager.py # Camera control
+│   ├── detection/body_detection.py      # TwelveLabs integration
+│   ├── detection/gemini_bmp_detector.py # Gemini detection
+│   └── rescue/rescue_protocol.py        # Rescue procedures
+└── dashboard/                   # Web dashboard
 ```
 
 ---
