@@ -36,6 +36,9 @@ class Config:
 
     # Directories
     TEMP_VIDEO_DIR = "temp_videos"
+    RUNTIME_DATA_DIR = "runtime_data"
+    RESCUE_REPORTS_DIR = os.path.join(RUNTIME_DATA_DIR, "rescue_reports")
+    RESCUE_LOGS_DIR = os.path.join(RUNTIME_DATA_DIR, "rescue_logs")
     
     # Survivor Detection Queries
     SURVIVOR_QUERIES = [
@@ -61,14 +64,18 @@ class Config:
     @classmethod
     def validate_config(cls):
         """Validate required configuration"""
+        missing_vars = []
         if not cls.TWELVELABS_API_KEY:
-            raise ValueError("TL_API_KEY is required in .env file")
-        
+            missing_vars.append("TL_API_KEY")
         if not cls.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is required in .env file")
-        
-        # Create temp directory if it doesn't exist
+            missing_vars.append("GEMINI_API_KEY")
+        if missing_vars:
+            missing = ", ".join(missing_vars)
+            raise ValueError(f"Missing required environment variables: {missing}")
+
+        # Create runtime directories if they do not exist
         os.makedirs(cls.TEMP_VIDEO_DIR, exist_ok=True)
+        os.makedirs(cls.RESCUE_REPORTS_DIR, exist_ok=True)
+        os.makedirs(cls.RESCUE_LOGS_DIR, exist_ok=True)
         
         print("✅ Configuration validated successfully")
-
