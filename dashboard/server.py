@@ -89,8 +89,12 @@ def _get_json_payload():
 @app.route('/api/mission/start', methods=['POST'])
 def start_mission():
     """Receive mission start from bot"""
-    data = request.json
+    data = _get_json_payload()
+    if data is None:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON payload'}), 400
     mission_id = data.get('mission_id')
+    if not mission_id:
+        return jsonify({'status': 'error', 'message': 'mission_id is required'}), 400
     rover_name = data.get('rover_name', 'Unknown')
     
     # Store in database
@@ -125,8 +129,12 @@ def start_mission():
 @app.route('/api/mission/survivor_detected', methods=['POST'])
 def survivor_detected():
     """Receive survivor detection from bot"""
-    data = request.json
+    data = _get_json_payload()
+    if data is None:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON payload'}), 400
     mission_id = data.get('mission_id')
+    if not mission_id:
+        return jsonify({'status': 'error', 'message': 'mission_id is required'}), 400
     confidence = data.get('confidence', 0.0)
     position = data.get('position', 'Unknown')
     
@@ -171,8 +179,12 @@ def survivor_detected():
 @app.route('/api/mission/medical_analysis', methods=['POST'])
 def medical_analysis():
     """Receive medical analysis from TwelveLabs"""
-    data = request.json
+    data = _get_json_payload()
+    if data is None:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON payload'}), 400
     mission_id = data.get('mission_id')
+    if not mission_id:
+        return jsonify({'status': 'error', 'message': 'mission_id is required'}), 400
     analysis = data.get('analysis', {})
     
     # Store analysis
@@ -214,9 +226,13 @@ def medical_analysis():
 @app.route('/api/mission/status', methods=['POST'])
 def update_mission_status():
     """Receive general status updates from bot"""
-    data = request.json
+    data = _get_json_payload()
+    if data is None:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON payload'}), 400
     mission_id = data.get('mission_id')
     status = data.get('status')
+    if not mission_id or not status:
+        return jsonify({'status': 'error', 'message': 'mission_id and status are required'}), 400
     details = data.get('details', '')
     
     # Store event
@@ -245,9 +261,13 @@ def update_mission_status():
 @app.route('/api/camera_feed', methods=['POST'])
 def receive_camera_feed():
     """Receive camera frames from bot"""
-    data = request.json
+    data = _get_json_payload()
+    if data is None:
+        return jsonify({'status': 'error', 'message': 'Invalid JSON payload'}), 400
     mission_id = data.get('mission_id')
     frame_data = data.get('frame_data')  # base64 encoded
+    if not mission_id or not frame_data:
+        return jsonify({'status': 'error', 'message': 'mission_id and frame_data are required'}), 400
     
     # Store latest frame for live feed
     dashboard_server.live_feeds[mission_id] = {
