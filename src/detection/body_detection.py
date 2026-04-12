@@ -186,8 +186,10 @@ class BodyDetectionSystem:
             try:
                 os.remove(video_path)
                 print("🗑️  Temporary video file cleaned up")
-            except:
-                pass
+            except FileNotFoundError:
+                print("⚠️  Temporary video file already removed")
+            except OSError as cleanup_error:
+                print(f"⚠️  Failed to remove temporary video file: {cleanup_error}")
     
     def _process_pegasus_response(self, response_text, video_id):
         """Process Pegasus analysis response"""
