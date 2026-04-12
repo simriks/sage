@@ -77,6 +77,14 @@ class RescueDashboardServer:
 
 dashboard_server = RescueDashboardServer()
 
+
+def _get_json_payload():
+    """Safely parse JSON request payload."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return None
+    return data
+
 # API Endpoints for Bot Communication
 @app.route('/api/mission/start', methods=['POST'])
 def start_mission():
