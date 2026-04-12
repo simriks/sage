@@ -195,9 +195,10 @@ class BodyDetectionSystem:
             
             # Try to parse JSON response
             try:
-                # Extract JSON from response if it contains other text
+                # Extract first JSON object from response if it contains extra text
                 import re
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                clean_text = response_text.replace("```json", "").replace("```", "").strip()
+                json_match = re.search(r'\{[\s\S]*?\}', clean_text)
                 if json_match:
                     analysis = json.loads(json_match.group())
                 else:
