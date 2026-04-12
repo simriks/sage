@@ -82,44 +82,54 @@ def _get_json_payload():
         return None
     return data
 
+
+def _error_response(message, status_code=500):
+    """Create a structured API error response."""
+    return jsonify({'status': 'error', 'message': message}), status_code
+
 # API Endpoints for Bot Communication
 @app.route('/api/mission/start', methods=['POST'])
 def start_mission():
     """Receive mission start from bot"""
-    data = _get_json_payload()
-    if data is None:
-        return jsonify({'status': 'error', 'message': 'Invalid JSON payload'}), 400
-    mission_id = data.get('mission_id')
-    if not mission_id:
-        return jsonify({'status': 'error', 'message': 'mission_id is required'}), 400
-    rover_name = data.get('rover_name', 'Unknown')
-    
-    # Store in database
-    with sqlite3.connect('rescue_missions.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-        INSERT INTO missions (mission_id, rover_name, status, start_time, survivor_detected, analysis_complete)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ''', (mission_id, rover_name, 'ACTIVE', datetime.now(), False, False))
-    
-    # Update active missions
-    dashboard_server.active_missions[mission_id] = {
-        'rover_name': rover_name,
-        'status': 'ACTIVE',
-        'start_time': datetime.now().isoformat(),
-        'survivor_detected': False
-    }
-    
-    # Broadcast to dashboard
-    socketio.emit('mission_started', {
-        'mission_id': mission_id,
-        'rover_name': rover_name,
-        'status': 'ACTIVE',
-        'timestamp': datetime.now().isoformat()
-    })
-    
-    print(f"🚨 Mission started: {mission_id} by {rover_name}")
-    return jsonify({'status': 'success', 'message': 'Mission registered'})
+    try:
+        data = _get_json_payload()
+        if data is None:
+            return _error_response('Invalid JSON payload', 400)
+        mission_id = data.get('mission_id')
+        if not mission_id:
+            return _error_response('mission_id is required', 400)
+        rover_name = data.get('rover_name', 'Unknown')
+
+        # Store in database
+        with sqlite3.connect('rescue_missions.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+            INSERT INTO missions (mission_id, rover_name, status, start_time, survivor_detected, analysis_complete)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ''', (mission_id, rover_name, 'ACTIVE', datetime.now(), False, False))
+
+        # Update active missions
+        dashboard_server.active_missions[mission_id] = {
+            'rover_name': rover_name,
+            'status': 'ACTIVE',
+            'start_time': datetime.now().isoformat(),
+            'survivor_detected': False
+        }
+
+        # Broadcast to dashboard
+        socketio.emit('mission_started', {
+            'mission_id': mission_id,
+            'rover_name': rover_name,
+            'status': 'ACTIVE',
+            'timestamp': datetime.now().isoformat()
+        })
+
+        print(f"🚨 Mission started: {mission_id} by {rover_name}")
+        return jsonify({'status': 'success', 'message': 'Mission registered'})
+    except sqlite3.IntegrityError:
+        return _error_response('mission_id already exists', 409)
+    except sqlite3.Error as exc:
+        return _error_response(f'database error: {exc}')
 
 @app.route('/api/mission/survivor_detected', methods=['POST'])
 def survivor_detected():
@@ -282,53 +292,59 @@ def dashboard():
 @app.route('/api/missions')
 def get_missions():
     """Get all missions for dashboard"""
-    with sqlite3.connect('rescue_missions.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-        SELECT mission_id, rover_name, status, start_time, survivor_detected, analysis_complete
-        FROM missions ORDER BY start_time DESC LIMIT 50
-        ''')
-        missions = cursor.fetchall()
-    
-    mission_list = []
-    for mission in missions:
-        mission_list.append({
-            'mission_id': mission[0],
-            'rover_name': mission[1],
-            'status': mission[2],
-            'start_time': mission[3],
-            'survivor_detected': mission[4],
-            'analysis_complete': mission[5]
-        })
-    
-    return jsonify(mission_list)
+    try:
+        with sqlite3.connect('rescue_missions.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+            SELECT mission_id, rover_name, status, start_time, survivor_detected, analysis_complete
+            FROM missions ORDER BY start_time DESC LIMIT 50
+            ''')
+            missions = cursor.fetchall()
+
+        mission_list = []
+        for mission in missions:
+            mission_list.append({
+                'mission_id': mission[0],
+                'rover_name': mission[1],
+                'status': mission[2],
+                'start_time': mission[3],
+                'survivor_detected': mission[4],
+                'analysis_complete': mission[5]
+            })
+
+        return jsonify(mission_list)
+    except sqlite3.Error as exc:
+        return _error_response(f'database error: {exc}')
 
 @app.route('/api/mission/<mission_id>/details')
 def get_mission_details(mission_id):
     """Get detailed information for specific mission"""
-    with sqlite3.connect('rescue_missions.db') as conn:
-        cursor = conn.cursor()
+    try:
+        with sqlite3.connect('rescue_missions.db') as conn:
+            cursor = conn.cursor()
 
-        # Get mission info
-        cursor.execute('SELECT * FROM missions WHERE mission_id = ?', (mission_id,))
-        mission = cursor.fetchone()
+            # Get mission info
+            cursor.execute('SELECT * FROM missions WHERE mission_id = ?', (mission_id,))
+            mission = cursor.fetchone()
 
-        # Get events
-        cursor.execute('''
-        SELECT event_type, event_data, timestamp FROM mission_events 
-        WHERE mission_id = ? ORDER BY timestamp DESC
-        ''', (mission_id,))
-        events = cursor.fetchall()
+            # Get events
+            cursor.execute('''
+            SELECT event_type, event_data, timestamp FROM mission_events 
+            WHERE mission_id = ? ORDER BY timestamp DESC
+            ''', (mission_id,))
+            events = cursor.fetchall()
 
-        # Get analysis
-        cursor.execute('SELECT * FROM survivor_analysis WHERE mission_id = ?', (mission_id,))
-        analysis = cursor.fetchone()
-    
-    return jsonify({
-        'mission': mission,
-        'events': events,
-        'analysis': analysis
-    })
+            # Get analysis
+            cursor.execute('SELECT * FROM survivor_analysis WHERE mission_id = ?', (mission_id,))
+            analysis = cursor.fetchone()
+
+        return jsonify({
+            'mission': mission,
+            'events': events,
+            'analysis': analysis
+        })
+    except sqlite3.Error as exc:
+        return _error_response(f'database error: {exc}')
 
 # WebSocket Events for Real-time Communication
 @socketio.on('connect')
