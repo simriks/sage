@@ -11,7 +11,7 @@ import requests
 import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'rescue_mission_2024'
+app.config['SECRET_KEY'] = os.getenv('DASHBOARD_SECRET_KEY', 'rescue_mission_2024')
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 class RescueDashboardServer:
@@ -360,4 +360,5 @@ if __name__ == '__main__':
     print("🚁 Starting Rescue Dashboard Server...")
     print("📊 Dashboard URL: http://localhost:5000")
     print("🔗 API Base URL: http://localhost:5000/api")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    debug_mode = os.getenv('DASHBOARD_DEBUG', 'false').lower() == 'true'
+    socketio.run(app, host='0.0.0.0', port=5000, debug=debug_mode)
