@@ -24,12 +24,13 @@ class CameraManager:
             if self.camera:
                 self.camera.release()
             
-            # Try to open camera
-            self.camera = cv2.VideoCapture(0)
+            # Try configured camera first
+            primary_camera_id = self.config.BODY_CAMERA_ID
+            self.camera = cv2.VideoCapture(primary_camera_id)
             
             if not self.camera.isOpened():
-                print("❌ Camera 0 failed, trying other indices...")
-                for i in range(1, 5):
+                print(f"❌ Camera {primary_camera_id} failed, trying other indices...")
+                for i in [idx for idx in range(0, 5) if idx != primary_camera_id]:
                     self.camera = cv2.VideoCapture(i)
                     if self.camera.isOpened():
                         print(f"✅ Found camera at index {i}")
