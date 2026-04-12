@@ -151,6 +151,7 @@ class CameraManager:
             # Try direct capture as fallback
             return self._direct_record_video(duration)
         
+        out = None
         try:
             # Create temp file
             temp_file = tempfile.NamedTemporaryFile(
@@ -197,6 +198,7 @@ class CameraManager:
                 time.sleep(1/fps)
             
             out.release()
+            out = None
             self.is_recording = False
             
             if frames_written > 0:
@@ -210,13 +212,17 @@ class CameraManager:
                 
         except Exception as e:
             print(f"❌ Recording error: {e}")
-            self.is_recording = False
             return None
+        finally:
+            self.is_recording = False
+            if out is not None:
+                out.release()
     
     def _direct_record_video(self, duration):
         """Direct recording fallback method"""
         print("🎬 Using direct recording method...")
         
+        out = None
         try:
             if not self.camera or not self.camera.isOpened():
                 print("❌ Camera not available for direct recording")
@@ -265,6 +271,7 @@ class CameraManager:
                 time.sleep(1/fps)
             
             out.release()
+            out = None
             
             if frames_written > 0:
                 file_size = os.path.getsize(video_path)
@@ -277,6 +284,9 @@ class CameraManager:
         except Exception as e:
             print(f"❌ Direct recording error: {e}")
             return None
+        finally:
+            if out is not None:
+                out.release()
     
     def get_latest_frame(self):
         """Get latest frame from queue"""
