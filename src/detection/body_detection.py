@@ -5,11 +5,13 @@ import threading
 from datetime import datetime
 from twelvelabs import TwelveLabs
 from ..config import Config
+from ..rescue.rescue_protocol import RescueProtocol
 
 class BodyDetectionSystem:
     def __init__(self, camera_manager):
         self.config = Config()
         self.camera_manager = camera_manager
+        self.rescue_protocol = RescueProtocol()
         
         # Initialize TwelveLabs client
         self.client = TwelveLabs(api_key=self.config.TWELVELABS_API_KEY)
@@ -246,9 +248,7 @@ class BodyDetectionSystem:
                 
 
                 # Trigger rescue protocol
-                from ..rescue.rescue_protocol import RescueProtocol
-                rescue_protocol = RescueProtocol()
-                rescue_protocol.activate_rescue_protocol({  # Changed method name
+                self.rescue_protocol.activate_rescue_protocol({
                     'analysis': analysis,
                     'video_id': video_id,
                     'detection_time': datetime.now().isoformat(),
