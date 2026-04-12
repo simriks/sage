@@ -9,9 +9,14 @@ import cv2
 from datetime import datetime
 import requests
 import os
+import secrets
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('DASHBOARD_SECRET_KEY', 'rescue_mission_2024')
+dashboard_secret_key = os.getenv('DASHBOARD_SECRET_KEY')
+if not dashboard_secret_key:
+    dashboard_secret_key = secrets.token_hex(32)
+    print("⚠️  DASHBOARD_SECRET_KEY not set; generated an ephemeral secret key")
+app.config['SECRET_KEY'] = dashboard_secret_key
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 class RescueDashboardServer:
@@ -129,7 +134,8 @@ def start_mission():
     except sqlite3.IntegrityError:
         return _error_response('mission_id already exists', 409)
     except sqlite3.Error as exc:
-        return _error_response(f'database error: {exc}')
+        print(f"❌ Database error in start_mission: {exc}")
+        return _error_response('database operation failed')
 
 @app.route('/api/mission/survivor_detected', methods=['POST'])
 def survivor_detected():
@@ -314,7 +320,8 @@ def get_missions():
 
         return jsonify(mission_list)
     except sqlite3.Error as exc:
-        return _error_response(f'database error: {exc}')
+        print(f"❌ Database error in get_missions: {exc}")
+        return _error_response('database operation failed')
 
 @app.route('/api/mission/<mission_id>/details')
 def get_mission_details(mission_id):
@@ -344,7 +351,8 @@ def get_mission_details(mission_id):
             'analysis': analysis
         })
     except sqlite3.Error as exc:
-        return _error_response(f'database error: {exc}')
+        print(f"❌ Database error in get_mission_details: {exc}")
+        return _error_response('database operation failed')
 
 # WebSocket Events for Real-time Communication
 @socketio.on('connect')
