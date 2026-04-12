@@ -25,54 +25,51 @@ class RescueDashboardServer:
         
     def setup_database(self):
         """Initialize SQLite database for mission data"""
-        conn = sqlite3.connect('rescue_missions.db')
-        cursor = conn.cursor()
-        
-        # Mission table
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS missions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            mission_id TEXT UNIQUE,
-            rover_name TEXT,
-            status TEXT,
-            start_time TIMESTAMP,
-            end_time TIMESTAMP,
-            survivor_detected BOOLEAN,
-            analysis_complete BOOLEAN,
-            location_lat REAL,
-            location_lng REAL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-        
-        # Events table
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS mission_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            mission_id TEXT,
-            event_type TEXT,
-            event_data TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (mission_id) REFERENCES missions (mission_id)
-        )
-        ''')
-        
-        # Survivor analysis table
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS survivor_analysis (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            mission_id TEXT,
-            detection_confidence REAL,
-            medical_analysis TEXT,
-            injury_severity TEXT,
-            recommended_action TEXT,
-            analysis_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (mission_id) REFERENCES missions (mission_id)
-        )
-        ''')
-        
-        conn.commit()
-        conn.close()
+        with sqlite3.connect('rescue_missions.db') as conn:
+            cursor = conn.cursor()
+
+            # Mission table
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS missions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mission_id TEXT UNIQUE,
+                rover_name TEXT,
+                status TEXT,
+                start_time TIMESTAMP,
+                end_time TIMESTAMP,
+                survivor_detected BOOLEAN,
+                analysis_complete BOOLEAN,
+                location_lat REAL,
+                location_lng REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+
+            # Events table
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mission_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mission_id TEXT,
+                event_type TEXT,
+                event_data TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (mission_id) REFERENCES missions (mission_id)
+            )
+            ''')
+
+            # Survivor analysis table
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS survivor_analysis (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                mission_id TEXT,
+                detection_confidence REAL,
+                medical_analysis TEXT,
+                injury_severity TEXT,
+                recommended_action TEXT,
+                analysis_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (mission_id) REFERENCES missions (mission_id)
+            )
+            ''')
         print("✅ Database initialized")
 
 dashboard_server = RescueDashboardServer()
@@ -98,14 +95,12 @@ def start_mission():
     rover_name = data.get('rover_name', 'Unknown')
     
     # Store in database
-    conn = sqlite3.connect('rescue_missions.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    INSERT INTO missions (mission_id, rover_name, status, start_time, survivor_detected, analysis_complete)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', (mission_id, rover_name, 'ACTIVE', datetime.now(), False, False))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('rescue_missions.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+        INSERT INTO missions (mission_id, rover_name, status, start_time, survivor_detected, analysis_complete)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (mission_id, rover_name, 'ACTIVE', datetime.now(), False, False))
     
     # Update active missions
     dashboard_server.active_missions[mission_id] = {
@@ -139,21 +134,19 @@ def survivor_detected():
     position = data.get('position', 'Unknown')
     
     # Update database
-    conn = sqlite3.connect('rescue_missions.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    UPDATE missions SET survivor_detected = ? WHERE mission_id = ?
-    ''', (True, mission_id))
-    
-    cursor.execute('''
-    INSERT INTO mission_events (mission_id, event_type, event_data)
-    VALUES (?, ?, ?)
-    ''', (mission_id, 'SURVIVOR_DETECTED', json.dumps({
-        'confidence': confidence,
-        'position': position
-    })))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('rescue_missions.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+        UPDATE missions SET survivor_detected = ? WHERE mission_id = ?
+        ''', (True, mission_id))
+
+        cursor.execute('''
+        INSERT INTO mission_events (mission_id, event_type, event_data)
+        VALUES (?, ?, ?)
+        ''', (mission_id, 'SURVIVOR_DETECTED', json.dumps({
+            'confidence': confidence,
+            'position': position
+        })))
     
     # Update active missions
     if mission_id in dashboard_server.active_missions:
@@ -188,25 +181,23 @@ def medical_analysis():
     analysis = data.get('analysis', {})
     
     # Store analysis
-    conn = sqlite3.connect('rescue_missions.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    UPDATE missions SET analysis_complete = ? WHERE mission_id = ?
-    ''', (True, mission_id))
-    
-    cursor.execute('''
-    INSERT INTO survivor_analysis 
-    (mission_id, detection_confidence, medical_analysis, injury_severity, recommended_action)
-    VALUES (?, ?, ?, ?, ?)
-    ''', (
-        mission_id,
-        analysis.get('confidence', 0.0),
-        json.dumps(analysis.get('medical_details', {})),
-        analysis.get('severity', 'Unknown'),
-        analysis.get('recommended_action', 'Immediate rescue required')
-    ))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('rescue_missions.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+        UPDATE missions SET analysis_complete = ? WHERE mission_id = ?
+        ''', (True, mission_id))
+
+        cursor.execute('''
+        INSERT INTO survivor_analysis 
+        (mission_id, detection_confidence, medical_analysis, injury_severity, recommended_action)
+        VALUES (?, ?, ?, ?, ?)
+        ''', (
+            mission_id,
+            analysis.get('confidence', 0.0),
+            json.dumps(analysis.get('medical_details', {})),
+            analysis.get('severity', 'Unknown'),
+            analysis.get('recommended_action', 'Immediate rescue required')
+        ))
     
     # Update active missions
     if mission_id in dashboard_server.active_missions:
@@ -236,17 +227,15 @@ def update_mission_status():
     details = data.get('details', '')
     
     # Store event
-    conn = sqlite3.connect('rescue_missions.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    INSERT INTO mission_events (mission_id, event_type, event_data)
-    VALUES (?, ?, ?)
-    ''', (mission_id, 'STATUS_UPDATE', json.dumps({
-        'status': status,
-        'details': details
-    })))
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('rescue_missions.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+        INSERT INTO mission_events (mission_id, event_type, event_data)
+        VALUES (?, ?, ?)
+        ''', (mission_id, 'STATUS_UPDATE', json.dumps({
+            'status': status,
+            'details': details
+        })))
     
     # Broadcast status update
     socketio.emit('status_update', {
@@ -293,14 +282,13 @@ def dashboard():
 @app.route('/api/missions')
 def get_missions():
     """Get all missions for dashboard"""
-    conn = sqlite3.connect('rescue_missions.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    SELECT mission_id, rover_name, status, start_time, survivor_detected, analysis_complete
-    FROM missions ORDER BY start_time DESC LIMIT 50
-    ''')
-    missions = cursor.fetchall()
-    conn.close()
+    with sqlite3.connect('rescue_missions.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+        SELECT mission_id, rover_name, status, start_time, survivor_detected, analysis_complete
+        FROM missions ORDER BY start_time DESC LIMIT 50
+        ''')
+        missions = cursor.fetchall()
     
     mission_list = []
     for mission in missions:
@@ -318,25 +306,23 @@ def get_missions():
 @app.route('/api/mission/<mission_id>/details')
 def get_mission_details(mission_id):
     """Get detailed information for specific mission"""
-    conn = sqlite3.connect('rescue_missions.db')
-    cursor = conn.cursor()
-    
-    # Get mission info
-    cursor.execute('SELECT * FROM missions WHERE mission_id = ?', (mission_id,))
-    mission = cursor.fetchone()
-    
-    # Get events
-    cursor.execute('''
-    SELECT event_type, event_data, timestamp FROM mission_events 
-    WHERE mission_id = ? ORDER BY timestamp DESC
-    ''', (mission_id,))
-    events = cursor.fetchall()
-    
-    # Get analysis
-    cursor.execute('SELECT * FROM survivor_analysis WHERE mission_id = ?', (mission_id,))
-    analysis = cursor.fetchone()
-    
-    conn.close()
+    with sqlite3.connect('rescue_missions.db') as conn:
+        cursor = conn.cursor()
+
+        # Get mission info
+        cursor.execute('SELECT * FROM missions WHERE mission_id = ?', (mission_id,))
+        mission = cursor.fetchone()
+
+        # Get events
+        cursor.execute('''
+        SELECT event_type, event_data, timestamp FROM mission_events 
+        WHERE mission_id = ? ORDER BY timestamp DESC
+        ''', (mission_id,))
+        events = cursor.fetchall()
+
+        # Get analysis
+        cursor.execute('SELECT * FROM survivor_analysis WHERE mission_id = ?', (mission_id,))
+        analysis = cursor.fetchone()
     
     return jsonify({
         'mission': mission,
