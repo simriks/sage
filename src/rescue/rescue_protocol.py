@@ -9,11 +9,26 @@ class RescueProtocol:
         self.config = Config()
         self.rescue_active = False
         self.rescue_start_time = None
+
+    def activate_rescue_protocol(self, detection_payload):
+        """Compatibility wrapper for detection pipeline payloads."""
+        analysis = detection_payload.get("analysis", {}) if isinstance(detection_payload, dict) else {}
+        survivor_details = analysis.get("survivor_details", [])
+        normalized_data = {
+            "priority_level": str(analysis.get("rescue_priority", "MEDIUM")).upper(),
+            "total_survivors": int(analysis.get("survivor_count", 0)),
+            "rover_location": detection_payload.get("rover_location", "unknown") if isinstance(detection_payload, dict) else "unknown",
+            "highest_confidence": max([detail.get("confidence", 0.0) for detail in survivor_details], default=0.0),
+            "survivors": survivor_details,
+            "medical_analysis": analysis,
+        }
+        self.handle_survivor_detection(normalized_data)
         
     def handle_survivor_detection(self, detection_data):
         """Handle survivor detection and initiate rescue protocol"""
+        priority_level = detection_data.get('priority_level', 'MEDIUM')
         print(f"\n🚨 RESCUE PROTOCOL ACTIVATED")
-        print(f"Priority: {detection_data['priority_level']}")
+        print(f"Priority: {priority_level}")
         
         self.rescue_active = True
         self.rescue_start_time = time.time()
@@ -54,7 +69,7 @@ class RescueProtocol:
         """Medical response based on assessment"""
         print("🩺 MEDICAL RESPONSE:")
         
-        priority = detection_data['priority_level']
+        priority = detection_data.get('priority_level', 'MEDIUM')
         
         if priority == "CRITICAL":
             print("   🚑 CRITICAL: Preparing emergency medical deployment")
@@ -100,8 +115,8 @@ class RescueProtocol:
         print("   📢 Activating speaker system")
         
         # Generate appropriate message based on detection
-        survivors_count = detection_data['total_survivors']
-        priority = detection_data['priority_level']
+        survivors_count = detection_data.get('total_survivors', 0)
+        priority = detection_data.get('priority_level', 'MEDIUM')
         
         if priority == "CRITICAL":
             message = "This is an emergency rescue robot. Help is on the way. Please remain calm and do not move if you are injured."
@@ -129,14 +144,14 @@ class RescueProtocol:
             'rover_name': self.config.ROVER_NAME,
             'alert_type': 'SURVIVOR_DETECTION',
             'timestamp': datetime.now().isoformat(),
-            'location': detection_data['rover_location'],
+            'location': detection_data.get('rover_location', 'unknown'),
             'survivors': {
-                'count': detection_data['total_survivors'],
-                'priority_level': detection_data['priority_level'],
-                'highest_confidence': detection_data['highest_confidence'],
-                'details': detection_data['survivors']
+                'count': detection_data.get('total_survivors', 0),
+                'priority_level': detection_data.get('priority_level', 'MEDIUM'),
+                'highest_confidence': detection_data.get('highest_confidence', 0.0),
+                'details': detection_data.get('survivors', [])
             },
-            'medical_assessment': detection_data['medical_analysis'],
+            'medical_assessment': detection_data.get('medical_analysis', {}),
             'rescue_actions_taken': [
                 'Rover stopped and positioned',
                 'Emergency signals activated',
@@ -168,7 +183,7 @@ class RescueProtocol:
     def _determine_next_actions(self, detection_data):
         """Determine next actions required"""
         actions = []
-        priority = detection_data['priority_level']
+        priority = detection_data.get('priority_level', 'MEDIUM')
         
         if priority == "CRITICAL":
             actions.extend([
