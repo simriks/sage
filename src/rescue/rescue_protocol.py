@@ -1,5 +1,6 @@
 import time
 import json
+import os
 from datetime import datetime
 from ..config import Config
 
@@ -146,7 +147,10 @@ class RescueProtocol:
         }
         
         # Save report locally
-        report_filename = f"rescue_report_{int(time.time())}.json"
+        report_filename = os.path.join(
+            self.config.RESCUE_REPORTS_DIR,
+            f"rescue_report_{int(time.time())}.json"
+        )
         with open(report_filename, 'w') as f:
             json.dump(base_report, f, indent=2)
         
@@ -227,7 +231,10 @@ class RescueProtocol:
         }
         
         # Save rescue log
-        log_filename = f"rescue_log_{rescue_log['rescue_id']}.json"
+        log_filename = os.path.join(
+            self.config.RESCUE_LOGS_DIR,
+            f"rescue_log_{rescue_log['rescue_id']}.json"
+        )
         with open(log_filename, 'w') as f:
             json.dump(rescue_log, f, indent=2)
         
