@@ -210,15 +210,6 @@ class RescueProtocol:
         
         rescue_log = {
             'rescue_id': f"rescue_{int(time.time())}",
-            'mission_id': self.config.MISSION_ID
-        }
-
-    def _document_rescue_attempt(self, detection_data):
-        """Document the rescue attempt"""
-        print("📝 RESCUE DOCUMENTATION:")
-        
-        rescue_log = {
-            'rescue_id': f"rescue_{int(time.time())}",
             'mission_id': self.config.MISSION_ID,
             'rover_name': self.config.ROVER_NAME,
             'timestamp': datetime.now().isoformat(),
