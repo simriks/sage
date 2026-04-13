@@ -5,11 +5,13 @@ import threading
 from datetime import datetime
 from twelvelabs import TwelveLabs
 from ..config import Config
+from ..rescue.rescue_protocol import RescueProtocol
 
 class BodyDetectionSystem:
     def __init__(self, camera_manager):
         self.config = Config()
         self.camera_manager = camera_manager
+        self.rescue_protocol = RescueProtocol()
         
         # Initialize TwelveLabs client
         self.client = TwelveLabs(api_key=self.config.TWELVELABS_API_KEY)
@@ -184,8 +186,10 @@ class BodyDetectionSystem:
             try:
                 os.remove(video_path)
                 print("🗑️  Temporary video file cleaned up")
-            except:
-                pass
+            except FileNotFoundError:
+                print("⚠️  Temporary video file already removed")
+            except OSError as cleanup_error:
+                print(f"⚠️  Failed to remove temporary video file: {cleanup_error}")
     
     def _process_pegasus_response(self, response_text, video_id):
         """Process Pegasus analysis response"""
@@ -195,11 +199,12 @@ class BodyDetectionSystem:
             
             # Try to parse JSON response
             try:
-                # Extract JSON from response if it contains other text
-                import re
-                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-                if json_match:
-                    analysis = json.loads(json_match.group())
+                # Extract first JSON object from response if it contains extra text
+                clean_text = response_text.replace("```json", "").replace("```", "").strip()
+                json_start = clean_text.find("{")
+                json_end = clean_text.rfind("}")
+                if json_start != -1 and json_end > json_start:
+                    analysis = json.loads(clean_text[json_start:json_end + 1])
                 else:
                     # If no JSON found, create a basic analysis
                     analysis = {
@@ -245,9 +250,7 @@ class BodyDetectionSystem:
                 
 
                 # Trigger rescue protocol
-                from ..rescue.rescue_protocol import RescueProtocol
-                rescue_protocol = RescueProtocol()
-                rescue_protocol.activate_rescue_protocol({  # Changed method name
+                self.rescue_protocol.activate_rescue_protocol({
                     'analysis': analysis,
                     'video_id': video_id,
                     'detection_time': datetime.now().isoformat(),

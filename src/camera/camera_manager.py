@@ -1,7 +1,7 @@
 import cv2
 import time
 import threading
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 import tempfile
 import os
 from ..config import Config
@@ -24,12 +24,13 @@ class CameraManager:
             if self.camera:
                 self.camera.release()
             
-            # Try to open camera
-            self.camera = cv2.VideoCapture(0)
+            # Try configured camera first
+            primary_camera_id = self.config.BODY_CAMERA_ID
+            self.camera = cv2.VideoCapture(primary_camera_id)
             
             if not self.camera.isOpened():
-                print("❌ Camera 0 failed, trying other indices...")
-                for i in range(1, 5):
+                print(f"❌ Camera {primary_camera_id} failed, trying other indices...")
+                for i in [idx for idx in range(0, 5) if idx != primary_camera_id]:
                     self.camera = cv2.VideoCapture(i)
                     if self.camera.isOpened():
                         print(f"✅ Found camera at index {i}")
@@ -105,10 +106,20 @@ class CameraManager:
                         break
                 
                 # Add new frame
-                self.frame_queue.put({
-                    'frame': frame.copy(),  # Make a copy to avoid issues
-                    'timestamp': time.time()
-                })
+                try:
+                    self.frame_queue.put_nowait({
+                        'frame': frame.copy(),  # Make a copy to avoid issues
+                        'timestamp': time.time()
+                    })
+                except Full:
+                    try:
+                        self.frame_queue.get_nowait()
+                    except Empty:
+                        pass
+                    self.frame_queue.put_nowait({
+                        'frame': frame.copy(),
+                        'timestamp': time.time()
+                    })
                 
                 # Debug output every 50 frames
                 if frame_count % 50 == 0:
@@ -140,6 +151,7 @@ class CameraManager:
             # Try direct capture as fallback
             return self._direct_record_video(duration)
         
+        out = None
         try:
             # Create temp file
             temp_file = tempfile.NamedTemporaryFile(
@@ -186,6 +198,7 @@ class CameraManager:
                 time.sleep(1/fps)
             
             out.release()
+            out = None
             self.is_recording = False
             
             if frames_written > 0:
@@ -199,13 +212,17 @@ class CameraManager:
                 
         except Exception as e:
             print(f"❌ Recording error: {e}")
-            self.is_recording = False
             return None
+        finally:
+            self.is_recording = False
+            if out is not None:
+                out.release()
     
     def _direct_record_video(self, duration):
         """Direct recording fallback method"""
         print("🎬 Using direct recording method...")
         
+        out = None
         try:
             if not self.camera or not self.camera.isOpened():
                 print("❌ Camera not available for direct recording")
@@ -254,6 +271,7 @@ class CameraManager:
                 time.sleep(1/fps)
             
             out.release()
+            out = None
             
             if frames_written > 0:
                 file_size = os.path.getsize(video_path)
@@ -266,6 +284,9 @@ class CameraManager:
         except Exception as e:
             print(f"❌ Direct recording error: {e}")
             return None
+        finally:
+            if out is not None:
+                out.release()
     
     def get_latest_frame(self):
         """Get latest frame from queue"""
